@@ -12,7 +12,7 @@ const errorMessage = document.getElementById("errorMessage");
 const savedNewsContainer = document.getElementById("savedNewsContainer");
 const toggleSavedButton = document.getElementById("toggleSavedButton");
 
-function fetchNews(query = "", category = "", page = 1) {
+async function fetchNews(query = "", category = "", page = 1) {
 
     let url = `https://content.guardianapis.com/search?q=${query}&from-date=2014-01-01&page=${page}&page-size=6&order-by=newest&api-key=${apiKey}`;
 
@@ -20,37 +20,24 @@ function fetchNews(query = "", category = "", page = 1) {
         url += `&section=${category}`; // Adds category to the URL if we have one chosen
     }
 
-    fetch(url)
-    .then(response => {
-
-        if(!response.ok) {
-            throw new Error (`HTTP Error! Status: ${response.status}`);
+    try {
+        const response = await fetch(url);
+        if (!response.ok) {
+            throw new Error(`HTTP Error! Status: ${response.status}`);
         }
-        return response.json();
 
-    })
-    .then(data => {
+        const data = await response.json();
         displayNews(data.response.results);
         createPages(data.response.pages, page, query, category);
 
-        // Only render local storage if we have any articles stored
-        const saved = localStorage.getItem("savedArticles");
-
-        if (saved) {
-            savedArticles = JSON.parse(saved); 
-            renderSavedArticles();
-        }
-
-    })
-    .catch(error => {
-        console.error("An error occured when fetchind data!", error);
-        errorMessage.textContent = "An error occured when fetching data!";
-    });
+} catch (error) {
+    console.error("An error occurred:", error.message);
+    errorMessage.textContent = "Failed to fetch news. Please try again later.";
+}
 }
 
 searchButton.addEventListener("click", () => {
     errorMessage.textContent = "";
-
     const query = searchInput.value.trim();
     const category = selectCategory.value;
     fetchNews(query, category);
@@ -209,7 +196,7 @@ toggleSavedButton.addEventListener("click", () => {
     if (isSavedNewsVisible) {
         savedNewsContainer.style.display = "grid"; 
         savedNewsContainer.classList.add("active");
-        toggleSavedButton.textContent = "Dölj sparade artiklar"; 
+        toggleSavedButton.textContent = "Hide Saved Articles"; 
 
     } else {
         savedNewsContainer.style.display = "none"; 
